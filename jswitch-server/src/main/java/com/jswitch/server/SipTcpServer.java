@@ -45,8 +45,8 @@ public class SipTcpServer {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         public void initChannel(SocketChannel ch) throws Exception {
-                            //ch.pipeline().addLast(new SipMessageDecoder());
-                            ch.pipeline().addLast(new StringDecoder());
+                            ch.pipeline().addLast(new SipMessageDecoder());
+                            //ch.pipeline().addLast(new StringDecoder());
                             ch.pipeline().addLast(new StringEncoder());
                             ch.pipeline().addLast(new SipTcpRequestHandler(sipMessageListener));
                         }

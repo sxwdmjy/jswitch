@@ -4,11 +4,11 @@ import com.jswitch.server.factory.SipMessageStrategy;
 import com.jswitch.server.factory.SipMessageStrategyFactory;
 import com.jswitch.server.msg.SipMessageEvent;
 import com.jswitch.server.msg.SipMessageListener;
+import com.jswitch.sip.SipRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
 import java.util.concurrent.*;
 
@@ -32,20 +32,19 @@ public class AsyncSipMessageListener implements SipMessageListener, Initializing
 
     private String processMessage(SipMessageEvent event) {
         String message = event.getMessage();
-        log.info("收到消息：" + message);
-        if(message.split("\r\n").length == 0){
+        log.info("收到消息：\n\n" + message);
+        if (message.split("\r\n").length == 0) {
             return "Null Message";
         }
+        SipRequest sipRequest = new SipRequest(message);
         // 获取消息的第一行
-        String firstLine = message.split("\r\n")[0];
-        String messageType = firstLine.split(" ")[0];
-        SipMessageStrategy strategy = strategyFactory.getStrategy(messageType);
+        SipMessageStrategy strategy = strategyFactory.getStrategy(sipRequest.getMethod());
         if (strategy != null) {
-            return strategy.handle(message);
+            return strategy.handle(sipRequest);
         } else {
-            log.info("No strategy found for message type: " + messageType);
+            log.info("No strategy found for message type: " + sipRequest.getMethod());
         }
-        return "No strategy found for message type: " + messageType;
+        return "No strategy found for message type: " + sipRequest.getMethod();
     }
 
     @Override
@@ -54,7 +53,7 @@ public class AsyncSipMessageListener implements SipMessageListener, Initializing
                 .thenAccept(result -> {
                     // 处理完成后的操作，例如通知其他组件
                     event.getCtx().channel().eventLoop().execute(() -> {
-                        log.info("执行完成 发送数据：{} 结束", result);
+                        log.info("执行完成 发送数据：\n{} 结束", result);
                         event.getCtx().writeAndFlush(result);
                     });
                 })

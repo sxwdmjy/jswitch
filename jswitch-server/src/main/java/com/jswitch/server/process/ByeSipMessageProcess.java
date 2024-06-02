@@ -1,12 +1,12 @@
 package com.jswitch.server.process;
 
-import com.jswitch.server.factory.SipMessageStrategy;
+import com.jswitch.sip.SipRequest;
 import org.springframework.stereotype.Component;
 
 @Component("BYE")
 public class ByeSipMessageProcess extends AbstractSipMessageProcess {
     @Override
-    public String handle(String message) {
+    public String handle(SipRequest message) {
         return "";
     }
 }

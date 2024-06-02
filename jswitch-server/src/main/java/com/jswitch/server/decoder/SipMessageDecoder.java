@@ -20,19 +20,45 @@ public class SipMessageDecoder extends ByteToMessageDecoder {
         }
 
         // 找到双CRLF的位置
+        int endOfHeaders = -1;
         for (int i = readerIndex; i < writerIndex - 3; i++) {
             if (in.getByte(i) == '\r' && in.getByte(i + 1) == '\n'
                     && in.getByte(i + 2) == '\r' && in.getByte(i + 3) == '\n') {
-                // 计算消息长度
-                int length = i - readerIndex + 4;
-                ByteBuf frame = in.readSlice(length).retain();
-                String message = frame.toString(StandardCharsets.UTF_8);
-                out.add(message);
-                return;
+                endOfHeaders = i + 4;
+                break;
             }
         }
 
         // 如果没有找到双CRLF，重置读取位置
-        in.readerIndex(readerIndex);
+        if (endOfHeaders == -1) {
+            in.readerIndex(readerIndex);
+            return;
+        }
+
+        // 解析头部
+        ByteBuf headerBuf = in.slice(readerIndex, endOfHeaders - readerIndex).retain();
+        String headers = headerBuf.toString(StandardCharsets.UTF_8);
+
+        // 获取 Content-Length 头部
+        int contentLength = 0;
+        String[] lines = headers.split("\r\n");
+        for (String line : lines) {
+            if (line.toLowerCase().startsWith("content-length:")) {
+                contentLength = Integer.parseInt(line.split(":")[1].trim());
+                break;
+            }
+        }
+
+        // 如果整个消息体还没有完全接收完，则重置读取位置并返回
+        if (in.readableBytes() < (endOfHeaders - readerIndex + contentLength)) {
+            in.readerIndex(readerIndex);
+            return;
+        }
+
+        // 读取完整消息
+        int totalLength = endOfHeaders - readerIndex + contentLength;
+        ByteBuf frame = in.readSlice(totalLength).retain();
+        String message = frame.toString(StandardCharsets.UTF_8);
+        out.add(message);
     }
 }

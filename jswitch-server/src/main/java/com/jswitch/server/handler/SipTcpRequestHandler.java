@@ -23,10 +23,6 @@ public class SipTcpRequestHandler extends SimpleChannelInboundHandler<String> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
         String channelId = ctx.channel().id().asLongText();
-        if(!StringUtils.hasLength(msg) && msg.split("\r\n").length == 0){
-            return;
-        }
-        //log.info("tcp channelRead0: channelId-{} \n{}",channelId, msg);
         SipMessageEvent event = new SipMessageEvent(msg, ctx);
         // 监听器
         sipMessageListener.onMessage(event);
