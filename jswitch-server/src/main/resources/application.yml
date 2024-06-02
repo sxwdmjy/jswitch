@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: jswitch-server
+
+
+netty:
+  sip:
+    port: 5060
