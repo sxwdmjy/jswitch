@@ -2,18 +2,13 @@ package com.jswitch.server.process;
 
 import com.jswitch.common.utils.AESUtils;
 import com.jswitch.common.utils.DigestAuthUtils;
-import com.jswitch.common.utils.IpUtils;
+import com.jswitch.server.msg.SipMessageRequest;
 import com.jswitch.service.domain.Subscriber;
 import com.jswitch.service.service.ISubscriberService;
-import com.jswitch.service.service.impl.SubscriberServiceImpl;
-import com.jswitch.sip.*;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import javax.crypto.spec.DESedeKeySpec;
-import java.security.SecureRandom;
 import java.util.Map;
 
 @Slf4j
@@ -24,7 +19,7 @@ public class RegisteredSipMessageProcess extends AbstractSipMessageProcess {
     private ISubscriberService subscriberService;
 
     @Override
-    public String handle(SipRequest message) {
+    public String handle(SipMessageRequest message) {
         // 提取Authorization头字段
         String authHeader = message.getHeaders().get("Authorization");
         if (authHeader != null) {

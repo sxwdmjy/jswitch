@@ -38,7 +38,7 @@ public class SipTcpClient1 {
                     }
                 });
         Channel channel = bootstrap.connect("127.0.0.1", 5060).channel();
-        for (int i = 0; i < 100_000; i++) {
+        for (int i = 0; i < 2; i++) {
             channel.writeAndFlush("REGISTER sip:127.0.0.1:5060;transport=tcp SIP/2.0\r\n" +
                     "Via: SIP/2.0/TCP 127.0.0.1:57549;rport;branch=z9hG4bKPj3e4b844a63bd486db6fbf513fd16c468;alias\r\n" +
                     "Max-Forwards: 70\r\n" +

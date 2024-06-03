@@ -1,6 +1,6 @@
 package com.jswitch.server.process;
 
-import com.jswitch.sip.SipRequest;
+import com.jswitch.server.msg.SipMessageRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -10,7 +10,7 @@ public class AckSipMessageProcess extends AbstractSipMessageProcess {
 
 
     @Override
-    public String handle(SipRequest message) {
+    public String handle(SipMessageRequest message) {
         return "";
     }
 }

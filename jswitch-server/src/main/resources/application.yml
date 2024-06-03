@@ -1,7 +1,11 @@
 spring:
   application:
     name: jswitch-server
-
+  profiles:
+    active: service
+  threads:
+    virtual:
+      enabled: true
 
 netty:
   sip:

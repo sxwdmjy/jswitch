@@ -4,7 +4,7 @@ import com.jswitch.server.factory.SipMessageStrategy;
 import com.jswitch.server.factory.SipMessageStrategyFactory;
 import com.jswitch.server.msg.SipMessageEvent;
 import com.jswitch.server.msg.SipMessageListener;
-import com.jswitch.sip.SipRequest;
+import com.jswitch.server.msg.SipMessageRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,14 +16,6 @@ import java.util.concurrent.*;
 @Component
 public class AsyncSipMessageListener implements SipMessageListener, InitializingBean {
 
-    // 获取CPU核心数
-    private final int cpuCores = Runtime.getRuntime().availableProcessors();
-    // 假设I/O等待时间是CPU时间的2倍
-    private final int ioWaitFactor = 2;
-    // 计算核心线程数和最大线程数
-    private final int corePoolSize = cpuCores * (1 + ioWaitFactor);
-    private final int maxPoolSize = corePoolSize * 2;
-
     private ExecutorService executorService;
 
     @Autowired
@@ -32,11 +24,16 @@ public class AsyncSipMessageListener implements SipMessageListener, Initializing
 
     private String processMessage(SipMessageEvent event) {
         String message = event.getMessage();
-        log.info("收到消息：\n\n" + message);
+        log.info("收到消息：\n" + message);
         if (message.split("\r\n").length == 0) {
             return "Null Message";
         }
-        SipRequest sipRequest = new SipRequest(message);
+        SipMessageRequest sipRequest = new SipMessageRequest(message);
+        String channelId = event.getCtx().channel().id().asLongText();
+        String remoteAddress = event.getCtx().channel().remoteAddress().toString();
+        sipRequest.setChannelId(channelId);
+        sipRequest.setRemoteIp(remoteAddress.substring(1, remoteAddress.lastIndexOf(':')));
+        sipRequest.setRemotePort(remoteAddress.substring(remoteAddress.lastIndexOf(':') + 1));
         // 获取消息的第一行
         SipMessageStrategy strategy = strategyFactory.getStrategy(sipRequest.getMethod());
         if (strategy != null) {
@@ -66,6 +63,13 @@ public class AsyncSipMessageListener implements SipMessageListener, Initializing
 
     @Override
     public void afterPropertiesSet() throws Exception {
+        // 获取CPU核心数
+        int cpuCores = Runtime.getRuntime().availableProcessors();
+        // 假设I/O等待时间是CPU时间的2倍
+        int ioWaitFactor = 2;
+        // 计算核心线程数和最大线程数
+        int corePoolSize = cpuCores * (1 + ioWaitFactor);
+        int maxPoolSize = corePoolSize * 2;
         this.executorService = new ThreadPoolExecutor(corePoolSize, maxPoolSize, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(1000), new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
