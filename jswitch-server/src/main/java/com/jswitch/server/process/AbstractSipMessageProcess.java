@@ -16,6 +16,7 @@ public abstract class AbstractSipMessageProcess implements SipMessageStrategy {
 
 
     private static final Pattern AUTH_PARAM_PATTERN = Pattern.compile("(\\w+)=((\"[^\"]*\")|([^,]*))");
+    private static final Pattern SIP_URI_PATTERN = Pattern.compile("sip:([^@]+)@[^;]+");
 
 
     protected Map<String, String> tagMap = new ConcurrentHashMap<>();
@@ -34,6 +35,13 @@ public abstract class AbstractSipMessageProcess implements SipMessageStrategy {
         return tag;
     }
 
+    protected String extractUsername(String sipUri) {
+        Matcher matcher = SIP_URI_PATTERN.matcher(sipUri);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
 
     public static Map<String, String> parseAuthorizationHeader(String authHeader) {
         Map<String, String> authParams = new HashMap<>();
@@ -122,10 +130,10 @@ public abstract class AbstractSipMessageProcess implements SipMessageStrategy {
         String cseq = request.getCSeq();
         String tagId = getTagId(callId);
         String nonce = generateNonce();
-        String realm = IpUtils.getLocalHost().getHostAddress();
 
         SipResponse sipResponse = new SipResponse();
         via.setReceived(request.getRemoteIp());
+        via.setRport(request.getRemotePort());
         sipResponse.setSipVersion("SIP/2.0");
         sipResponse.setStatusCode(SipResponseStatus.UNAUTHORIZED.getStatusCode());
         sipResponse.setReasonPhrase(SipResponseStatus.UNAUTHORIZED.getReasonPhrase());
@@ -135,7 +143,7 @@ public abstract class AbstractSipMessageProcess implements SipMessageStrategy {
         sipResponse.setFrom(from);
         sipResponse.setCallId(callId);
         sipResponse.setCSeq(cseq);
-        sipResponse.putHeader("WWW-Authenticate", "Digest realm=\"" + realm + "\", nonce=\"" + nonce + "\"");
+        sipResponse.putHeader("WWW-Authenticate", "Digest realm=\"" + request.getRemoteIp() + "\", nonce=\"" + nonce + "\"");
         sipResponse.putHeader("Server", "Jswitch");
         sipResponse.setContentLength(0);
 

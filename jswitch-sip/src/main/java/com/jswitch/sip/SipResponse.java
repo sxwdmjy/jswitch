@@ -12,7 +12,7 @@ public class SipResponse {
     private int statusCode;
     private String reasonPhrase;
     private Map<String, String> headers;
-    private String body;
+    private SDPMessage body;
     private SipAddress from;
     private SipAddress to;
     private String callId;

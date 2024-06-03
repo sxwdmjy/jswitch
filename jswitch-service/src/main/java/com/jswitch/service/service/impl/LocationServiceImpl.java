@@ -1,9 +1,14 @@
 package com.jswitch.service.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.jswitch.service.domain.BaseEntity;
 import com.jswitch.service.domain.Location;
 import com.jswitch.service.mapper.LocationMapper;
 import com.jswitch.service.service.ILocationService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Objects;
 
 /**
  * 用户注册信息表(Location)表服务实现类
@@ -14,5 +19,26 @@ import org.springframework.stereotype.Service;
 @Service
 public class LocationServiceImpl extends BaseServiceImpl<LocationMapper, Location> implements ILocationService {
 
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public Boolean add(Location location) {
+        Location oldLocation = getOne(new LambdaQueryWrapper<Location>()
+                .eq(Location::getUsername, location.getUsername())
+                .eq(BaseEntity::getDelFlag, 0)
+                .last("limit 1"));
+        if (Objects.isNull(oldLocation)) {
+            return save(location);
+        } else {
+            location.setId(oldLocation.getId());
+            return updateById(location);
+        }
+    }
+
+    @Override
+    public Boolean delete(Location location) {
+        location.setDelFlag(1);
+        location.setStatus(1);
+        return update(location,new LambdaQueryWrapper<Location>().eq(Location::getUsername,location.getUsername()).eq(Location::getCallId,location.getCallId()));
+    }
 }
 

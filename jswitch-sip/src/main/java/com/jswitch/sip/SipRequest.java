@@ -1,5 +1,6 @@
 package com.jswitch.sip;
 
+import com.jswitch.sip.utils.SDPParser;
 import lombok.Data;
 
 import java.util.LinkedHashMap;
@@ -11,7 +12,7 @@ public class SipRequest {
     private String method;
     private SipUri uri;
     private String sipVersion;
-    private String body;
+    private SDPMessage body;
 
     private SipAddress from;
     private SipAddress to;
@@ -56,7 +57,7 @@ public class SipRequest {
         for (int i = lineIndex + 1; i < lines.length; i++) {
             body.append(lines[i]).append("\r\n");
         }
-        setBody(body.toString().trim());
+        setBody(SDPParser.parse(body.toString().trim()));
     }
 
     public void addHeader(String name, String value) {

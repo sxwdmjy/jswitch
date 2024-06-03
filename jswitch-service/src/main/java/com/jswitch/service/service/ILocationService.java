@@ -10,5 +10,8 @@ import com.jswitch.service.domain.Location;
  */
 public interface ILocationService extends IBaseService<Location> {
 
+    Boolean add(Location location);
+
+    Boolean delete(Location location);
 }
 
