@@ -1,4 +1,4 @@
-package com.jswitch.server.utils;
+package com.jswitch.common.utils;
 
 import java.net.*;
 import java.util.Enumeration;

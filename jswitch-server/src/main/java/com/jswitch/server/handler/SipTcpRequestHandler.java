@@ -6,9 +6,6 @@ import com.jswitch.server.utils.SipChannelManager;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 @Slf4j
 public class SipTcpRequestHandler extends SimpleChannelInboundHandler<String> {

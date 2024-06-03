@@ -1,4 +1,4 @@
-package com.jswitch.server.utils;
+package com.jswitch.common.utils;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

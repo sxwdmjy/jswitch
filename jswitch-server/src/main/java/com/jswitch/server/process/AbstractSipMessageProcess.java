@@ -1,6 +1,8 @@
 package com.jswitch.server.process;
 
+import com.jswitch.common.utils.IpUtils;
 import com.jswitch.server.factory.SipMessageStrategy;
+import com.jswitch.sip.*;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
@@ -41,5 +43,73 @@ public abstract class AbstractSipMessageProcess implements SipMessageStrategy {
             authParams.put(key, value);
         }
         return authParams;
+    }
+
+    protected String createOkResponse(SipRequest request) {
+        // 解析SIP URI和标签
+        SipAddress from = request.getFrom();
+        SipAddress to = request.getTo();
+        String fromUri = from.getUri();
+        String fromTag = from.getParameters().get("tag");
+        String toUri = to.getUri();
+        ViaHeader via = request.getVia();
+        String callId = request.getCallId();
+        String cseq = request.getCSeq();
+        SipAddress contact = request.getContact();
+        String tagId = getTagId(callId);
+        String nonce = generateNonce();
+        String realm = IpUtils.getLocalHost().getHostAddress();
+
+        SipResponse sipResponse = new SipResponse();
+        sipResponse.setSipVersion("SIP/2.0");
+        sipResponse.setStatusCode(SipResponseStatus.OK.getStatusCode());
+        sipResponse.setReasonPhrase(SipResponseStatus.OK.getReasonPhrase());
+        via.setReceived(IpUtils.getLocalHost().getHostAddress());
+        via.setRport("1212");
+        sipResponse.setVia(via);
+        to.putParameter("tag", tagId);
+        sipResponse.setTo(to);
+        sipResponse.setFrom(from);
+        sipResponse.setCallId(callId);
+        sipResponse.setCSeq(cseq);
+        SipAddress contactAdress = new SipAddress();
+        contactAdress.setUri(contact.getUri());
+        contactAdress.putParameter("expires", request.getHeaders().get("Expires"));
+        sipResponse.setContact(contactAdress);
+        sipResponse.putHeader("Server", "Jswitch");
+        sipResponse.setContentLength(0);
+        return sipResponse.toString();
+    }
+
+    protected String createUnauthorizedResponse(SipRequest request) {
+        // 解析SIP URI和标签
+        SipAddress from = request.getFrom();
+        SipAddress to = request.getTo();
+        String fromUri = from.getUri();
+        String fromTag = from.getParameters().get("tag");
+        String toUri = to.getUri();
+        ViaHeader via = request.getVia();
+        String callId = request.getCallId();
+        String cseq = request.getCSeq();
+        String tagId = getTagId(callId);
+        String nonce = generateNonce();
+        String realm = IpUtils.getLocalHost().getHostAddress();
+
+        SipResponse sipResponse = new SipResponse();
+        via.setReceived(IpUtils.getLocalHost().getHostAddress());
+        sipResponse.setSipVersion("SIP/2.0");
+        sipResponse.setStatusCode(SipResponseStatus.UNAUTHORIZED.getStatusCode());
+        sipResponse.setReasonPhrase(SipResponseStatus.UNAUTHORIZED.getReasonPhrase());
+        sipResponse.setVia(via);
+        to.putParameter("tag", tagId);
+        sipResponse.setTo(to);
+        sipResponse.setFrom(from);
+        sipResponse.setCallId(callId);
+        sipResponse.setCSeq(cseq);
+        sipResponse.putHeader("WWW-Authenticate", "Digest realm=\"" + realm + "\", nonce=\"" + nonce + "\"");
+        sipResponse.putHeader("Server", "Jswitch");
+        sipResponse.setContentLength(0);
+
+        return sipResponse.toString();
     }
 }
