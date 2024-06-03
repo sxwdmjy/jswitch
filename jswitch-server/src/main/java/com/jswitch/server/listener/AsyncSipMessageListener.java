@@ -37,7 +37,7 @@ public class AsyncSipMessageListener implements SipMessageListener, Initializing
         // 获取消息的第一行
         SipMessageStrategy strategy = strategyFactory.getStrategy(sipRequest.getMethod());
         if (strategy != null) {
-            return strategy.handle(sipRequest);
+            return strategy.handle(sipRequest).toString();
         } else {
             log.info("No strategy found for message type: " + sipRequest.getMethod());
         }

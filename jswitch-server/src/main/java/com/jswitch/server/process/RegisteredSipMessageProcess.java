@@ -5,6 +5,7 @@ import com.jswitch.common.utils.DigestAuthUtils;
 import com.jswitch.server.msg.SipMessageRequest;
 import com.jswitch.service.domain.Subscriber;
 import com.jswitch.service.service.ISubscriberService;
+import com.jswitch.sip.SipResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -19,7 +20,7 @@ public class RegisteredSipMessageProcess extends AbstractSipMessageProcess {
     private ISubscriberService subscriberService;
 
     @Override
-    public String handle(SipMessageRequest message) {
+    public SipResponse handle(SipMessageRequest message) {
         // 提取Authorization头字段
         String authHeader = message.getHeaders().get("Authorization");
         if (authHeader != null) {

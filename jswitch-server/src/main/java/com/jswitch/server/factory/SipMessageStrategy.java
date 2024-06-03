@@ -1,7 +1,8 @@
 package com.jswitch.server.factory;
 
 import com.jswitch.server.msg.SipMessageRequest;
+import com.jswitch.sip.SipResponse;
 
 public interface SipMessageStrategy {
-    String handle(SipMessageRequest message);
+    SipResponse handle(SipMessageRequest message);
 }

@@ -46,7 +46,36 @@ public abstract class AbstractSipMessageProcess implements SipMessageStrategy {
         return authParams;
     }
 
-    protected String createOkResponse(SipMessageRequest request) {
+    protected SipResponse createTryingResponse(SipMessageRequest request) {
+        SipAddress from = request.getFrom();
+        SipAddress to = request.getTo();
+        String callId = request.getCallId();
+        ViaHeader via = request.getVia();
+        via.setReceived(request.getRemoteIp());
+        via.setRport(request.getRemotePort());
+        String cseq = request.getCSeq();
+        SipAddress contact = request.getContact();
+        String toUri = to.getUri();
+        String tagId = getTagId(callId);
+        SipResponse sipResponse = new SipResponse();
+        sipResponse.setSipVersion("SIP/2.0");
+        sipResponse.setStatusCode(SipResponseStatus.TRYING.getStatusCode());
+        sipResponse.setReasonPhrase(SipResponseStatus.TRYING.getReasonPhrase());
+        sipResponse.setVia(via);
+        to.putParameter("tag", tagId);
+        sipResponse.setTo(to);
+        sipResponse.setFrom(from);
+        sipResponse.setCallId(callId);
+        sipResponse.setCSeq(cseq);
+        SipAddress contactAdress = new SipAddress();
+        contactAdress.setUri(contact.getUri());
+        sipResponse.setContact(contactAdress);
+        sipResponse.putHeader("Server", "Jswitch");
+        sipResponse.setContentLength(0);
+        return sipResponse;
+    }
+
+    protected SipResponse createOkResponse(SipMessageRequest request) {
         // 解析SIP URI和标签
         SipAddress from = request.getFrom();
         SipAddress to = request.getTo();
@@ -78,10 +107,10 @@ public abstract class AbstractSipMessageProcess implements SipMessageStrategy {
         sipResponse.setContact(contactAdress);
         sipResponse.putHeader("Server", "Jswitch");
         sipResponse.setContentLength(0);
-        return sipResponse.toString();
+        return sipResponse;
     }
 
-    protected String createUnauthorizedResponse(SipMessageRequest request) {
+    protected SipResponse createUnauthorizedResponse(SipMessageRequest request) {
         // 解析SIP URI和标签
         SipAddress from = request.getFrom();
         SipAddress to = request.getTo();
@@ -110,6 +139,6 @@ public abstract class AbstractSipMessageProcess implements SipMessageStrategy {
         sipResponse.putHeader("Server", "Jswitch");
         sipResponse.setContentLength(0);
 
-        return sipResponse.toString();
+        return sipResponse;
     }
 }
