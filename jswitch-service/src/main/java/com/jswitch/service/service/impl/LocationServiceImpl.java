@@ -1,5 +1,6 @@
 package com.jswitch.service.service.impl;
 
+import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.jswitch.service.domain.BaseEntity;
 import com.jswitch.service.domain.Location;
@@ -24,6 +25,7 @@ public class LocationServiceImpl extends BaseServiceImpl<LocationMapper, Locatio
     public Boolean add(Location location) {
         Location oldLocation = getOne(new LambdaQueryWrapper<Location>()
                 .eq(Location::getUsername, location.getUsername())
+                .eq(Location::getCallId,location.getCallId())
                 .eq(BaseEntity::getDelFlag, 0)
                 .last("limit 1"));
         if (Objects.isNull(oldLocation)) {
@@ -42,13 +44,12 @@ public class LocationServiceImpl extends BaseServiceImpl<LocationMapper, Locatio
     }
 
     @Override
-    public Location getByUserName(String username)
+    public Boolean checkUserName(String username)
     {
-        return getOne(new LambdaQueryWrapper<Location>()
+        return count(new LambdaQueryWrapper<Location>()
                 .eq(Location::getUsername, username)
-                .eq(Location::getStatus,0)
-                .eq(BaseEntity::getDelFlag, 0)
-                .last("limit 1"));
+                .le(Location::getExpires, DateUtil.now())
+                .eq(BaseEntity::getDelFlag, 0)) > 0L;
     }
 }
 

@@ -50,11 +50,7 @@ public class SubscribeSipMessageProcess extends AbstractSipMessageProcess {
 
     private boolean isAuthenticated(SipAddress messageFrom) {
         String username = extractUsername(messageFrom.getUri());
-        Location location = locationService.getByUserName(username);
-        if(Objects.nonNull(location)){
-            return true;
-        }
-        return false;
+        return locationService.checkUserName(username);
     }
 
     /**
