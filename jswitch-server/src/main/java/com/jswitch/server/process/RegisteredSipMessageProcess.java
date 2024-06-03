@@ -60,12 +60,13 @@ public class RegisteredSipMessageProcess extends AbstractSipMessageProcess {
                 location.setDomain(message.getUri().getHost());
                 location.setReceived(message.getRemoteIp());
                 location.setStatus(0);
-                location.setExpires(DateUtil.offsetSecond(new Date(),Integer.parseInt(expires)));
-                if(StringUtils.hasLength(expires) && ObjectUtil.notEqual("0",expires)){
-                    locationService.saveOrUpdate(location);
+                if(StringUtils.hasLength(expires)){
+                    location.setExpires(DateUtil.offsetSecond(new Date(),Integer.parseInt(expires)));
                 }
-                //取消注册
-                else {
+                if(StringUtils.hasLength(expires) && ObjectUtil.equals("0",expires)){
+                    locationService.saveOrUpdate(location);
+
+                } else {
                     locationService.delete(location);
                 }
                 return createOkResponse(message);

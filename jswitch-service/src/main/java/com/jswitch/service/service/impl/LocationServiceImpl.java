@@ -40,5 +40,15 @@ public class LocationServiceImpl extends BaseServiceImpl<LocationMapper, Locatio
         location.setStatus(1);
         return update(location,new LambdaQueryWrapper<Location>().eq(Location::getUsername,location.getUsername()).eq(Location::getCallId,location.getCallId()));
     }
+
+    @Override
+    public Location getByUserName(String username)
+    {
+        return getOne(new LambdaQueryWrapper<Location>()
+                .eq(Location::getUsername, username)
+                .eq(Location::getStatus,0)
+                .eq(BaseEntity::getDelFlag, 0)
+                .last("limit 1"));
+    }
 }
 

@@ -13,5 +13,7 @@ public interface ILocationService extends IBaseService<Location> {
     Boolean add(Location location);
 
     Boolean delete(Location location);
+
+    Location getByUserName(String username);
 }
 

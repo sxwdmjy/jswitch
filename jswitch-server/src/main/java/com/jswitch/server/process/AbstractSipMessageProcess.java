@@ -4,6 +4,7 @@ import com.jswitch.common.utils.IpUtils;
 import com.jswitch.server.factory.SipMessageStrategy;
 import com.jswitch.server.msg.SipMessageRequest;
 import com.jswitch.sip.*;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -116,6 +117,26 @@ public abstract class AbstractSipMessageProcess implements SipMessageStrategy {
         sipResponse.putHeader("Server", "Jswitch");
         sipResponse.setContentLength(0);
         return sipResponse;
+    }
+
+    protected SipResponse createResponse(int statusCode, SipMessageRequest request, String reasonPhrase) {
+        SipResponse response = new SipResponse();
+        response.setStatusCode(statusCode);
+        response.setSipVersion("SIP/2.0");
+        response.setReasonPhrase(reasonPhrase);
+        ViaHeader via = request.getVia();
+        via.setReceived(request.getRemoteIp());
+        via.setRport(request.getRemotePort());
+        response.setVia(via);
+        SipAddress requestTo = request.getTo();
+        requestTo.putParameter("tag", getTagId(request.getCallId()));
+        response.setTo(requestTo);
+        response.setFrom(request.getFrom());
+        response.setCallId(request.getCallId());
+        response.setCSeq(request.getCSeq());
+        response.putHeader("Server", "Jswitch");
+        response.setContentLength(0);
+        return response;
     }
 
     protected SipResponse createUnauthorizedResponse(SipMessageRequest request) {
