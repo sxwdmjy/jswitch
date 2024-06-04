@@ -17,7 +17,7 @@ public class Origin {
 
     @Override
     public String toString() {
-        return username + " " + sessionId + " " + sessionVersion + " " + netType + " " + addrType + " " + unicastAddress;
+        return "o=" + username + " " + sessionId + " " + sessionVersion + " " + netType + " " + addrType + " " + unicastAddress + "\r\n";
     }
 
 }

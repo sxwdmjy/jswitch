@@ -2,12 +2,13 @@ package com.jswitch.sip;
 
 import com.jswitch.sip.utils.SDPParser;
 import lombok.Data;
+import org.springframework.util.StringUtils;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Data
-public class SipRequest {
+public class SipRequest extends SipMessage{
 
     private String method;
     private SipUri uri;
@@ -23,6 +24,10 @@ public class SipRequest {
     private int contentLength;
 
     private Map<String, String> headers;
+
+    public SipRequest() {
+
+    }
 
     public SipRequest(String message) {
         this.headers = new LinkedHashMap<>();
@@ -61,6 +66,9 @@ public class SipRequest {
     }
 
     public void addHeader(String name, String value) {
+        if(!StringUtils.hasLength(name)){
+            return;
+        }
         this.headers.put(name, value);
         switch (name.toLowerCase()) {
             case "from":

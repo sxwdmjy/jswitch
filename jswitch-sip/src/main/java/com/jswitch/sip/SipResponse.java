@@ -6,7 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Data
-public class SipResponse {
+public class SipResponse extends SipMessage {
 
     private String sipVersion;
     private int statusCode;
@@ -23,6 +23,37 @@ public class SipResponse {
 
     public SipResponse() {
         this.headers = new LinkedHashMap<>();
+    }
+
+    public SipResponse(String message) {
+        this.headers = new LinkedHashMap<>();
+        this.parse(message);
+    }
+
+    public void parse(String message) {
+        String[] lines = message.split("\r\n");
+        for (String line : lines) {
+            if (line.startsWith("SIP/2.0")) {
+                String[] split = line.split(" ");
+                sipVersion = split[0];
+                statusCode = Integer.parseInt(split[1]);
+                reasonPhrase = split[2];
+            } else if (line.startsWith("Via:")) {
+                via = new ViaHeader(line.substring(4));
+            } else if (line.startsWith("From:")) {
+                from = new SipAddress(line.substring(5));
+            } else if (line.startsWith("To:")) {
+                to = new SipAddress(line.substring(3));
+            } else if (line.startsWith("Call-ID:")) {
+                callId = line.substring(9);
+            } else if (line.startsWith("CSeq:")) {
+                cSeq = line.substring(5);
+            } else if (line.startsWith("Contact:")) {
+                contact = new SipAddress(line.substring(8));
+            } else if (line.startsWith("Content-Length:")) {
+                contentLength = Integer.parseInt(line.substring(16));
+            }
+        }
     }
 
     public void putHeader(String name, String value) {
@@ -47,7 +78,7 @@ public class SipResponse {
         for (Map.Entry<String, String> header : headers.entrySet()) {
             response.append(header.getKey()).append(": ").append(header.getValue()).append("\r\n");
         }
-        if (body != null){
+        if (body != null) {
             response.append("\r\n").append(body);
         }
         response.append("\r\n");

@@ -12,6 +12,6 @@ public class Attribute {
 
     @Override
     public String toString() {
-        return name + (value != null ? ":" + value : "");
+        return "a=" + name + (value != null ? ":" + value : "") + "\r\n";
     }
 }

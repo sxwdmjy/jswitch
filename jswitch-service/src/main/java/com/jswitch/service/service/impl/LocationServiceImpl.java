@@ -20,7 +20,6 @@ import java.util.Objects;
 @Service
 public class LocationServiceImpl extends BaseServiceImpl<LocationMapper, Location> implements ILocationService {
 
-    @Transactional(rollbackFor = Exception.class)
     @Override
     public Boolean add(Location location) {
         Location oldLocation = getOne(new LambdaQueryWrapper<Location>()
@@ -50,6 +49,15 @@ public class LocationServiceImpl extends BaseServiceImpl<LocationMapper, Locatio
                 .eq(Location::getUsername, username)
                 .le(Location::getExpires, DateUtil.now())
                 .eq(BaseEntity::getDelFlag, 0)) > 0L;
+    }
+
+    @Override
+    public Location getByUserName(String username) {
+       return getOne(new LambdaQueryWrapper<Location>()
+                .eq(Location::getUsername, username)
+                .ge(Location::getExpires, DateUtil.now())
+                .eq(BaseEntity::getDelFlag, 0)
+                .last(" limit 1"));
     }
 }
 

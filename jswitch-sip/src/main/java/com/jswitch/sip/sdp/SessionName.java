@@ -11,6 +11,6 @@ public class SessionName {
 
     @Override
     public String toString() {
-        return sessionName;
+        return "s=" + sessionName + "\r\n";
     }
 }

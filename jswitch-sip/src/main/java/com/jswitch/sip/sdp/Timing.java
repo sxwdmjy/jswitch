@@ -12,6 +12,6 @@ public class Timing {
 
     @Override
     public String toString() {
-        return startTime + " " + stopTime;
+        return "t=" + startTime + " " + stopTime + "\r\n";
     }
 }

@@ -6,11 +6,10 @@ import lombok.Data;
 @AllArgsConstructor
 @Data
 public class Bandwidth {
-
     private String bandwidth;
 
     @Override
     public String toString() {
-        return bandwidth;
+        return "b=" + bandwidth + "\r\n";
     }
 }

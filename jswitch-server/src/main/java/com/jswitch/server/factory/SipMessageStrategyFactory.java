@@ -11,11 +11,12 @@ import java.util.Map;
 public class SipMessageStrategyFactory {
 
     @Autowired
-    private Map<String, SipMessageStrategy> eventMap;
+    private Map<String, SipRequestStrategy> sipRequestMap;
 
 
-    public SipMessageStrategy getStrategy(String messageType) {
-        return eventMap.get(messageType);
+    public SipRequestStrategy getSipRequestStrategy(String messageType) {
+        return sipRequestMap.get(messageType);
     }
+
 
 }

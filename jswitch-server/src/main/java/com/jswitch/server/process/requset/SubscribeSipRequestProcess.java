@@ -1,23 +1,22 @@
-package com.jswitch.server.process;
+package com.jswitch.server.process.requset;
 
-import com.jswitch.server.msg.SipMessageRequest;
-import com.jswitch.service.domain.Location;
+import com.jswitch.server.process.AbstractSipRequestProcess;
 import com.jswitch.service.service.ILocationService;
 import com.jswitch.sip.SipAddress;
+import com.jswitch.sip.SipRequest;
 import com.jswitch.sip.SipResponse;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.Objects;
 
 @Component("SUBSCRIBE")
-public class SubscribeSipMessageProcess extends AbstractSipMessageProcess {
+public class SubscribeSipRequestProcess extends AbstractSipRequestProcess {
 
     @Resource
     private ILocationService locationService;
 
     @Override
-    public SipResponse handle(SipMessageRequest message) {
+    public SipResponse handle(SipRequest message) {
 
         // 解析请求头和其他必要信息
         SipAddress messageTo = message.getTo();

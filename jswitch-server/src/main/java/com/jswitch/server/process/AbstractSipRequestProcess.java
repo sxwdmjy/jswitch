@@ -1,11 +1,18 @@
 package com.jswitch.server.process;
 
-import com.jswitch.common.utils.IpUtils;
-import com.jswitch.server.factory.SipMessageStrategy;
-import com.jswitch.server.msg.SipMessageRequest;
+import com.jswitch.common.utils.AESUtils;
+import com.jswitch.common.utils.DigestAuthUtils;
+import com.jswitch.server.factory.SipRequestStrategy;
+import com.jswitch.server.factory.SipResponseStrategy;
+import com.jswitch.service.domain.Subscriber;
+import com.jswitch.service.service.ILocationService;
+import com.jswitch.service.service.ISubscriberService;
 import com.jswitch.sip.*;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -13,8 +20,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public abstract class AbstractSipMessageProcess implements SipMessageStrategy {
+@Slf4j
+@Component
+public abstract class AbstractSipRequestProcess implements SipRequestStrategy, SipResponseStrategy {
 
+    @Resource
+    protected ISubscriberService subscriberService;
+
+    @Resource
+    protected ILocationService locationService;
 
     private static final Pattern AUTH_PARAM_PATTERN = Pattern.compile("(\\w+)=((\"[^\"]*\")|([^,]*))");
     private static final Pattern SIP_URI_PATTERN = Pattern.compile("sip:([^@]+)@[^;]+");
@@ -44,7 +58,17 @@ public abstract class AbstractSipMessageProcess implements SipMessageStrategy {
         return null;
     }
 
-    public static Map<String, String> parseAuthorizationHeader(String authHeader) {
+    protected String getPasswordForUser(String username) {
+        Subscriber subscriber = subscriberService.getUserByUsername(username);
+        try {
+            return AESUtils.decrypt(subscriber.getPassword());
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+
+    protected Map<String, String> parseAuthorizationHeader(String authHeader) {
         Map<String, String> authParams = new HashMap<>();
         Matcher matcher = AUTH_PARAM_PATTERN.matcher(authHeader);
         while (matcher.find()) {
@@ -55,7 +79,32 @@ public abstract class AbstractSipMessageProcess implements SipMessageStrategy {
         return authParams;
     }
 
-    protected SipResponse createTryingResponse(SipMessageRequest request) {
+    //身份验证
+    protected Boolean checkAuthorization(SipRequest request) {
+        String authHeader = request.getHeaders().get("Authorization");
+        if (StringUtils.isBlank(authHeader)) {
+            return false;
+        }
+        Map<String, String> authParams = parseAuthorizationHeader(authHeader);
+        String username = authParams.get("username");
+        String realm = authParams.get("realm");
+        String nonce = authParams.get("nonce");
+        String uri = authParams.get("uri");
+        String response = authParams.get("response");
+        String method = request.getMethod();
+        //从数据库或其他存储中获取用户密码
+        String password = getPasswordForUser(username);
+        String calculatedResponse = DigestAuthUtils.calculateResponse(username, realm, password, nonce, uri, method);
+        if(calculatedResponse.equals(response)){
+            log.info("Authentication successful for user: " + username);
+            return true;
+        }else {
+            log.info("Authentication failed for user: " + username);
+            return false;
+        }
+    }
+
+    protected SipResponse createTryingResponse(SipRequest request) {
         SipAddress from = request.getFrom();
         SipAddress to = request.getTo();
         String callId = request.getCallId();
@@ -84,7 +133,7 @@ public abstract class AbstractSipMessageProcess implements SipMessageStrategy {
         return sipResponse;
     }
 
-    protected SipResponse createOkResponse(SipMessageRequest request) {
+    protected SipResponse createOkResponse(SipRequest request) {
         // 解析SIP URI和标签
         SipAddress from = request.getFrom();
         SipAddress to = request.getTo();
@@ -96,8 +145,6 @@ public abstract class AbstractSipMessageProcess implements SipMessageStrategy {
         String cseq = request.getCSeq();
         SipAddress contact = request.getContact();
         String tagId = getTagId(callId);
-        String nonce = generateNonce();
-
         SipResponse sipResponse = new SipResponse();
         sipResponse.setSipVersion("SIP/2.0");
         sipResponse.setStatusCode(SipResponseStatus.OK.getStatusCode());
@@ -112,14 +159,16 @@ public abstract class AbstractSipMessageProcess implements SipMessageStrategy {
         sipResponse.setCSeq(cseq);
         SipAddress contactAdress = new SipAddress();
         contactAdress.setUri(contact.getUri());
-        contactAdress.putParameter("expires", request.getHeaders().get("Expires"));
+        if(StringUtils.isNotEmpty(request.getHeaders().get("Expires"))){
+            contactAdress.putParameter("expires", request.getHeaders().get("Expires"));
+        }
         sipResponse.setContact(contactAdress);
         sipResponse.putHeader("Server", "Jswitch");
         sipResponse.setContentLength(0);
         return sipResponse;
     }
 
-    protected SipResponse createResponse(int statusCode, SipMessageRequest request, String reasonPhrase) {
+    protected SipResponse createResponse(int statusCode, SipRequest request, String reasonPhrase) {
         SipResponse response = new SipResponse();
         response.setStatusCode(statusCode);
         response.setSipVersion("SIP/2.0");
@@ -139,7 +188,7 @@ public abstract class AbstractSipMessageProcess implements SipMessageStrategy {
         return response;
     }
 
-    protected SipResponse createUnauthorizedResponse(SipMessageRequest request) {
+    protected SipResponse createUnauthorizedResponse(SipRequest request) {
         // 解析SIP URI和标签
         SipAddress from = request.getFrom();
         SipAddress to = request.getTo();
@@ -169,5 +218,15 @@ public abstract class AbstractSipMessageProcess implements SipMessageStrategy {
         sipResponse.setContentLength(0);
 
         return sipResponse;
+    }
+
+    @Override
+    public SipResponse handle(SipRequest message) {
+        return null;
+    }
+
+    @Override
+    public SipRequest handle(SipResponse message) {
+        return null;
     }
 }

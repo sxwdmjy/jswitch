@@ -1,13 +1,18 @@
 package com.jswitch.server.decoder;
 
+import com.jswitch.sip.SipRequest;
+import com.jswitch.sip.SipResponse;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Objects;
 
+@Slf4j
 public class SipMessageDecoder extends ByteToMessageDecoder {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
@@ -59,6 +64,19 @@ public class SipMessageDecoder extends ByteToMessageDecoder {
         int totalLength = endOfHeaders - readerIndex + contentLength;
         ByteBuf frame = in.readSlice(totalLength).retain();
         String message = frame.toString(StandardCharsets.UTF_8);
-        out.add(message);
+        if(log.isDebugEnabled()){
+            log.info("decoder read msg：{}",message);
+        }
+        if(Objects.equals(message,"\r\n\r\n")){
+            return;
+        }
+        if (message.startsWith("SIP/2.0")) {
+            SipResponse response = new SipResponse(message);
+            out.add(response);
+        } else {
+            SipRequest request = new SipRequest(message);
+            // 解析请求消息
+            out.add(request);
+        }
     }
 }

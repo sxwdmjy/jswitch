@@ -27,6 +27,17 @@ public class MediaDescription {
 
     @Override
     public String toString() {
-        return media + " " + port + " " + proto + " " + String.join(" ", fmt);
+        StringBuilder sb = new StringBuilder();
+        sb.append("m=").append(media).append(" ").append(port).append(" ").append(proto);
+        for (String format : fmt) {
+            sb.append(" ").append(format);
+        }
+        sb.append("\r\n");
+
+        for (Attribute attribute : attributes) {
+            sb.append(attribute.toString());
+        }
+
+        return sb.toString();
     }
 }

@@ -1,8 +1,10 @@
-package com.jswitch.server;
+package com.jswitch.server.server;
 
 import com.jswitch.server.decoder.SipMessageDecoder;
 import com.jswitch.server.handler.SipTcpRequestHandler;
-import com.jswitch.server.listener.AsyncSipMessageListener;
+import com.jswitch.server.listener.AsyncSipRequestListener;
+import com.jswitch.server.listener.AsyncSipResponseListener;
+import com.jswitch.server.msg.SipMessageListener;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -11,28 +13,31 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import jakarta.annotation.PreDestroy;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class SipTcpServer {
 
-    private final int port;
 
+    private Integer port;
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
 
     private ChannelFuture channelFuture;
 
+    private List<SipMessageListener> listenerList;
+
+
     public SipTcpServer(int port) {
         this.port = port;
+        this.listenerList = new ArrayList<>();
     }
-
-    @Autowired
-    private AsyncSipMessageListener sipMessageListener;
 
     private void start() {
         try {
@@ -48,7 +53,9 @@ public class SipTcpServer {
                             ch.pipeline().addLast(new SipMessageDecoder());
                             //ch.pipeline().addLast(new StringDecoder());
                             ch.pipeline().addLast(new StringEncoder());
-                            ch.pipeline().addLast(new SipTcpRequestHandler(sipMessageListener));
+                            SipTcpRequestHandler sipTcpRequestHandler = new SipTcpRequestHandler();
+                            sipTcpRequestHandler.setListeners(listenerList);
+                            ch.pipeline().addLast(sipTcpRequestHandler);
                         }
                     })
                     .option(ChannelOption.SO_BACKLOG, 128)
@@ -76,5 +83,9 @@ public class SipTcpServer {
             workerGroup.shutdownGracefully();
         }
 
+    }
+
+    public void addListener(SipMessageListener listener) {
+        listenerList.add(listener);
     }
 }
