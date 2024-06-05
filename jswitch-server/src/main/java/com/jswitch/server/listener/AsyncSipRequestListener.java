@@ -1,19 +1,14 @@
 package com.jswitch.server.listener;
 
-import com.jswitch.server.factory.SipRequestStrategy;
 import com.jswitch.server.factory.SipMessageStrategyFactory;
+import com.jswitch.server.factory.SipMessageStrategy;
 import com.jswitch.server.msg.SipMessageEvent;
 import com.jswitch.server.msg.SipMessageListener;
 import com.jswitch.sip.SipRequest;
-import com.jswitch.sip.SipResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.net.SocketAddress;
-import java.util.Objects;
 import java.util.concurrent.*;
 
 @Slf4j
@@ -22,41 +17,34 @@ public class AsyncSipRequestListener implements SipMessageListener, Initializing
 
     private ExecutorService executorService;
 
-    @Autowired
-    private SipMessageStrategyFactory strategyFactory;
+    private final SipMessageStrategyFactory strategyFactory;
+
+    public AsyncSipRequestListener(SipMessageStrategyFactory strategyFactory) {
+        this.strategyFactory = strategyFactory;
+    }
 
 
-    private SipResponse processMessage(SipMessageEvent event) {
-        SipRequest message =(SipRequest) event.getMessage();
+    private void processMessage(SipMessageEvent event) {
+        SipRequest message = (SipRequest) event.getMessage();
         log.info("收到SipRequest消息：\n\n" + message);
         // 获取消息的第一行
-        SipRequestStrategy strategy = strategyFactory.getSipRequestStrategy(message.getMethod());
-        if (strategy != null) {
-            return strategy.handle(message);
-        } else {
-            log.info("No strategy found for message type: " + message.getMethod());
-            SipRequestStrategy nostrategy = strategyFactory.getSipRequestStrategy("NOSTRATEGY");
-           return nostrategy.handle(message);
+        try {
+            SipMessageStrategy strategy = strategyFactory.getSipRequestStrategy(message.getMethod());
+            if (strategy != null) {
+                strategy.handle(event);
+            } else {
+                log.info("No strategy found for message type: " + message.getMethod());
+                SipMessageStrategy nostrategy = strategyFactory.getSipRequestStrategy("NOSTRATEGY");
+                nostrategy.handle(event);
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
     public void onMessage(SipMessageEvent event) {
-        CompletableFuture.supplyAsync(() -> processMessage(event), executorService)
-                .thenAccept(result -> {
-                    // 处理完成后的操作，例如通知其他组件
-                    event.getCtx().channel().eventLoop().execute(() -> {
-                        log.info("执行完成 发送数据：\n{} 结束", result);
-                        if(Objects.nonNull(result)){
-                            event.getCtx().writeAndFlush(result.toString());
-                        }
-                    });
-                })
-                .exceptionally(throwable -> {
-                    throwable.printStackTrace();
-                    event.getCtx().close();
-                    return null;
-                });
+        executorService.execute(() -> processMessage(event));
     }
 
 

@@ -4,7 +4,7 @@ import com.jswitch.server.listener.AsyncSipRequestListener;
 import com.jswitch.server.listener.AsyncSipResponseListener;
 import com.jswitch.server.msg.SipMessageEvent;
 import com.jswitch.server.msg.SipMessageListener;
-import com.jswitch.server.utils.SipChannelManager;
+import com.jswitch.server.utils.SessionChannelManager;
 import com.jswitch.sip.SipMessage;
 import com.jswitch.sip.SipRequest;
 import com.jswitch.sip.SipResponse;
@@ -41,23 +41,15 @@ public class SipTcpRequestHandler extends SimpleChannelInboundHandler<SipMessage
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        String channelId = ctx.channel().id().asLongText();
-        log.info("tcp channelActive: channelId-{}", channelId);
-        SipChannelManager.add(channelId, ctx);
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        String channelId = ctx.channel().id().asLongText();
-        log.info("tcp channelInactive: channelId-{}", channelId);
-        SipChannelManager.remove(channelId);
     }
 
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        String channelId = ctx.channel().id().asLongText();
-        SipChannelManager.remove(channelId);
     }
 
     public void setListeners(List<SipMessageListener> listenerList) {

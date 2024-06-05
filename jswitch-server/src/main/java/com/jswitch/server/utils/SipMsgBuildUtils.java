@@ -1,9 +1,8 @@
-package com.jswitch.server.process;
+package com.jswitch.server.utils;
 
+import cn.hutool.core.util.IdUtil;
 import com.jswitch.common.utils.AESUtils;
 import com.jswitch.common.utils.DigestAuthUtils;
-import com.jswitch.server.factory.SipRequestStrategy;
-import com.jswitch.server.factory.SipResponseStrategy;
 import com.jswitch.service.domain.Subscriber;
 import com.jswitch.service.service.ILocationService;
 import com.jswitch.service.service.ISubscriberService;
@@ -15,42 +14,41 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * @author danmo
+ * @date 2024-06-05 14:38
+ **/
 @Slf4j
 @Component
-public abstract class AbstractSipRequestProcess implements SipRequestStrategy, SipResponseStrategy {
-
-    @Resource
-    protected ISubscriberService subscriberService;
+public class SipMsgBuildUtils {
 
     @Resource
     protected ILocationService locationService;
+
+    @Resource
+    protected ISubscriberService subscriberService;
 
     private static final Pattern AUTH_PARAM_PATTERN = Pattern.compile("(\\w+)=((\"[^\"]*\")|([^,]*))");
     private static final Pattern SIP_URI_PATTERN = Pattern.compile("sip:([^@]+)@[^;]+");
 
 
-    protected Map<String, String> tagMap = new ConcurrentHashMap<>();
-
-    protected String generateNonce() {
-        return UUID.randomUUID().toString().replace("-", "");
-    }
+    public Map<String, String> tagMap = new ConcurrentHashMap<>();
 
 
-    protected String getTagId(String callId) {
+    public String getTagId(String callId) {
         String tag = tagMap.get(callId);
         if (tag == null) {
-            tag = generateNonce();
+            tag = IdUtil.fastSimpleUUID();
             tagMap.put(callId, tag);
         }
         return tag;
     }
 
-    protected String extractUsername(String sipUri) {
+    public String extractUsername(String sipUri) {
         Matcher matcher = SIP_URI_PATTERN.matcher(sipUri);
         if (matcher.find()) {
             return matcher.group(1);
@@ -58,7 +56,7 @@ public abstract class AbstractSipRequestProcess implements SipRequestStrategy, S
         return null;
     }
 
-    protected String getPasswordForUser(String username) {
+    public String getPasswordForUser(String username) {
         Subscriber subscriber = subscriberService.getUserByUsername(username);
         try {
             return AESUtils.decrypt(subscriber.getPassword());
@@ -68,7 +66,7 @@ public abstract class AbstractSipRequestProcess implements SipRequestStrategy, S
     }
 
 
-    protected Map<String, String> parseAuthorizationHeader(String authHeader) {
+    public Map<String, String> parseAuthorizationHeader(String authHeader) {
         Map<String, String> authParams = new HashMap<>();
         Matcher matcher = AUTH_PARAM_PATTERN.matcher(authHeader);
         while (matcher.find()) {
@@ -80,7 +78,7 @@ public abstract class AbstractSipRequestProcess implements SipRequestStrategy, S
     }
 
     //身份验证
-    protected Boolean checkAuthorization(SipRequest request) {
+    public Boolean checkAuthorization(SipRequest request) {
         String authHeader = request.getHeaders().get("Authorization");
         if (StringUtils.isBlank(authHeader)) {
             return false;
@@ -104,7 +102,7 @@ public abstract class AbstractSipRequestProcess implements SipRequestStrategy, S
         }
     }
 
-    protected SipResponse createTryingResponse(SipRequest request) {
+    public SipResponse createTryingResponse(SipRequest request) {
         SipAddress from = request.getFrom();
         SipAddress to = request.getTo();
         String callId = request.getCallId();
@@ -133,7 +131,7 @@ public abstract class AbstractSipRequestProcess implements SipRequestStrategy, S
         return sipResponse;
     }
 
-    protected SipResponse createOkResponse(SipRequest request) {
+    public SipResponse createOkResponse(SipRequest request) {
         // 解析SIP URI和标签
         SipAddress from = request.getFrom();
         SipAddress to = request.getTo();
@@ -168,7 +166,7 @@ public abstract class AbstractSipRequestProcess implements SipRequestStrategy, S
         return sipResponse;
     }
 
-    protected SipResponse createResponse(int statusCode, SipRequest request, String reasonPhrase) {
+    public SipResponse createResponse(int statusCode, SipRequest request, String reasonPhrase) {
         SipResponse response = new SipResponse();
         response.setStatusCode(statusCode);
         response.setSipVersion("SIP/2.0");
@@ -188,7 +186,7 @@ public abstract class AbstractSipRequestProcess implements SipRequestStrategy, S
         return response;
     }
 
-    protected SipResponse createUnauthorizedResponse(SipRequest request) {
+    public SipResponse createUnauthorizedResponse(SipRequest request) {
         // 解析SIP URI和标签
         SipAddress from = request.getFrom();
         SipAddress to = request.getTo();
@@ -199,7 +197,7 @@ public abstract class AbstractSipRequestProcess implements SipRequestStrategy, S
         String callId = request.getCallId();
         String cseq = request.getCSeq();
         String tagId = getTagId(callId);
-        String nonce = generateNonce();
+        String nonce = IdUtil.fastSimpleUUID();
 
         SipResponse sipResponse = new SipResponse();
         via.setReceived(request.getRemoteIp());
@@ -220,13 +218,20 @@ public abstract class AbstractSipRequestProcess implements SipRequestStrategy, S
         return sipResponse;
     }
 
-    @Override
-    public SipResponse handle(SipRequest message) {
-        return null;
-    }
-
-    @Override
-    public SipRequest handle(SipResponse message) {
-        return null;
+    public SipRequest createInviteRequest(SipRequest request) {
+        SipRequest sipRequest = new SipRequest();
+        sipRequest.setMethod("INVITE");
+        sipRequest.setUri(request.getUri());
+        sipRequest.setSipVersion(request.getSipVersion());
+        sipRequest.setVia(request.getVia());
+        sipRequest.setFrom(request.getFrom());
+        sipRequest.setTo(request.getTo());
+        sipRequest.setCallId(request.getCallId());
+        sipRequest.setCSeq("0");
+        request.getHeaders().put("Server", "Jswitch");
+        sipRequest.setHeaders(request.getHeaders());
+        sipRequest.setContentLength(request.getContentLength());
+        sipRequest.setBody(request.getBody());
+        return sipRequest;
     }
 }

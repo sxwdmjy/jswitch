@@ -72,10 +72,6 @@ public class Location extends BaseEntity implements Serializable {
     @TableField("call_id")
     private String callId;
 
-    @TableField("channel_id")
-    private String channelId;
-
-
     /**
      * cseq
      */

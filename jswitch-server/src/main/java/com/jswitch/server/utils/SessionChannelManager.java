@@ -8,7 +8,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-public class SipChannelManager {
+public class SessionChannelManager {
 
     public static Map<String, ChannelHandlerContext> channelHandlerContextMap = new ConcurrentHashMap<>();
 

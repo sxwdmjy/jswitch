@@ -1,16 +1,15 @@
 package com.jswitch.server.listener;
 
+import com.jswitch.server.factory.SipMessageStrategy;
 import com.jswitch.server.factory.SipMessageStrategyFactory;
 import com.jswitch.server.msg.SipMessageEvent;
 import com.jswitch.server.msg.SipMessageListener;
-import com.jswitch.sip.SipRequest;
 import com.jswitch.sip.SipResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Objects;
 import java.util.concurrent.*;
 
 @Slf4j
@@ -23,29 +22,27 @@ public class AsyncSipResponseListener implements SipMessageListener, Initializin
     private SipMessageStrategyFactory strategyFactory;
 
 
-    private SipRequest processMessage(SipMessageEvent event) {
+    private void processMessage(SipMessageEvent event) {
         SipResponse response = (SipResponse) event.getMessage();
         log.info("收到SipResponse消息：\n\n" + response);
-        return null;
+
+        try {
+            SipMessageStrategy strategy = strategyFactory.getSipResponseStrategy(response.getStatusCode());
+            if (strategy != null) {
+                strategy.handle(event);
+            } else {
+                log.info("No strategy found for statusCode type: " + response.getStatusCode());
+                SipMessageStrategy nostrategy = strategyFactory.getSipResponseStrategy(500);
+                nostrategy.handle(event);
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public void onMessage(SipMessageEvent event) {
-        CompletableFuture.supplyAsync(() -> processMessage(event), executorService)
-                .thenAccept(result -> {
-                    // 处理完成后的操作，例如通知其他组件
-                    event.getCtx().channel().eventLoop().execute(() -> {
-                        log.info("执行完成 发送数据：\n{} 结束", result);
-                        if(Objects.nonNull(result)){
-                            event.getCtx().writeAndFlush(result.toString());
-                        }
-                    });
-                })
-                .exceptionally(throwable -> {
-                    throwable.printStackTrace();
-                    event.getCtx().close();
-                    return null;
-                });
+        executorService.execute(() -> processMessage(event));
     }
 
     @Override

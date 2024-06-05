@@ -27,6 +27,7 @@
         <transmittable-thread-local.version>2.12.2</transmittable-thread-local.version>
         <jackon-dataformat.version>2.13.3</jackon-dataformat.version>
         <pagehelper.boot.version>1.4.6</pagehelper.boot.version>
+        <liteflow.version>2.12.0</liteflow.version>
     </properties>
     <packaging>pom</packaging>
     <modules>
@@ -126,6 +127,13 @@
                 <artifactId>pagehelper-spring-boot-starter</artifactId>
                 <version>${pagehelper.boot.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>com.yomahub</groupId>
+                <artifactId>liteflow-spring-boot-starter</artifactId>
+                <version>${liteflow.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 

@@ -1,6 +1,7 @@
 package com.jswitch.server.process.requset;
 
-import com.jswitch.server.process.AbstractSipRequestProcess;
+import com.jswitch.server.msg.SipMessageEvent;
+import com.jswitch.server.process.AbstractSipMessageProcess;
 import com.jswitch.service.service.ILocationService;
 import com.jswitch.sip.SipAddress;
 import com.jswitch.sip.SipRequest;
@@ -10,41 +11,41 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 @Component("SUBSCRIBE")
-public class SubscribeSipRequestProcess extends AbstractSipRequestProcess {
+public class SubscribeSipMessageProcess extends AbstractSipMessageProcess {
 
     @Resource
     private ILocationService locationService;
 
     @Override
-    public SipResponse handle(SipRequest message) {
-
+    public void handle(SipMessageEvent event) {
+        SipRequest sipRequest = (SipRequest) event.getMessage();
         // 解析请求头和其他必要信息
-        SipAddress messageTo = message.getTo();
-        SipAddress messageFrom = message.getFrom();
-        String callId = message.getCallId();
-        String cSeq = message.getCSeq();
-        String event = message.getHeaders().get("Event");
-        String expires = message.getHeaders().get("Expires");
+        SipAddress messageTo = sipRequest.getTo();
+        SipAddress messageFrom = sipRequest.getFrom();
+        String callId = sipRequest.getCallId();
+        String cSeq = sipRequest.getCSeq();
+        String eventHeader = sipRequest.getHeaders().get("Event");
+        String expires = sipRequest.getHeaders().get("Expires");
         // 检查事件类型
-        if (event == null || !isValidEvent(event)) {
-            SipResponse response = createResponse(489, message, "Bad Event");
-            return response;
+        if (eventHeader == null || !isValidEvent(eventHeader)) {
+            SipResponse response = createResponse(489, sipRequest, "Bad Event");
+            event.getCtx().writeAndFlush(response);
         }
 
         // 检查订阅者身份验证
         if (!isAuthenticated(messageFrom)) {
-            SipResponse response = createResponse(401, message, "Unauthorized");
-            return response;
+            SipResponse response = createResponse(401, sipRequest, "Unauthorized");
+            event.getCtx().writeAndFlush(response);
         }
 
         // 检查订阅期限
         int expiresValue = expires != null ? Integer.parseInt(expires) : 3600;
         if (expiresValue <= 0) {
-            SipResponse response = createResponse(400, message, "Invalid Expires Header");
-            return response;
+            SipResponse response = createResponse(400, sipRequest, "Invalid Expires Header");
+            event.getCtx().writeAndFlush(response);
         }
         // 如果所有检查通过，生成并发送200 OK响应
-        return createResponse(200, message, "Subscription accepted");
+        event.getCtx().writeAndFlush(createResponse(200, sipRequest, "Subscription accepted"));
     }
 
     private boolean isAuthenticated(SipAddress messageFrom) {
@@ -59,12 +60,13 @@ public class SubscribeSipRequestProcess extends AbstractSipRequestProcess {
      * conference：用于会议状态的更新，例如参与者的加入和离开
      * message-summary：用于通知消息等待指示（MWI），如未读的语音邮件
      * reg：用于监视用户注册状态
-     * @param event
+     *
+     * @param eventHeader
      * @return
      */
-    private boolean isValidEvent(String event) {
+    private boolean isValidEvent(String eventHeader) {
         String eventStr = "presence|dialog|refer|conference|message-summary|reg";
         // 检查事件类型是否有效（根据实际需求实现）
-        return eventStr.contains(event.toLowerCase());
+        return eventStr.contains(eventHeader.toLowerCase());
     }
 }
