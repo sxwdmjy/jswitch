@@ -63,6 +63,15 @@
             <artifactId>pagehelper-spring-boot-starter</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.github.pagehelper</groupId>
+            <artifactId>sqlparser4.7</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.jsqlparser</groupId>
+            <artifactId>jsqlparser</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>com.jswitch</groupId>
             <artifactId>jswitch-common</artifactId>
             <version>0.0.1</version>

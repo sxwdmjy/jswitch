@@ -21,9 +21,7 @@ public class SipMessageStrategyFactory {
     }
 
     public SipMessageStrategy getSipResponseStrategy(int statusCode) {
-        SipMessageStrategy handler = getResponseStrategy(statusCode);
-        if (handler != null) return handler;
-        return sipMessageMap.get(statusCode);
+        return getResponseStrategy(statusCode);
     }
 
     private SipMessageStrategy getResponseStrategy(int statusCode) {

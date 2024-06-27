@@ -15,11 +15,6 @@ public class ByeSipMessageProcess extends AbstractSipMessageProcess {
     @Override
     public void handle(SipMessageEvent event) {
         SipRequest sipRequest = (SipRequest)event.getMessage();
-        SipCallChannel callInfo = SipChannelCache.getCallInfo(sipRequest.getCallId());
-        if(Objects.isNull(callInfo)){
-            return;
-        }
-        SipChannelCache.removeCallInfo(sipRequest.getCallId());
-        sendResponse(SessionChannelManager.get(callInfo.getCallee()),sipRequest.toString());
+
     }
 }

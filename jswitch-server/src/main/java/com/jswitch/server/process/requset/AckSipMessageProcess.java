@@ -19,10 +19,5 @@ public class AckSipMessageProcess extends AbstractSipMessageProcess {
     @Override
     public void handle(SipMessageEvent event) {
         SipRequest sipRequest = (SipRequest)event.getMessage();
-        SipCallChannel callInfo = SipChannelCache.getCallInfo(sipRequest.getCallId());
-        if(Objects.isNull(callInfo)){
-            return;
-        }
-        sendResponse(SessionChannelManager.get(callInfo.getCallee()),sipRequest.toString());
     }
 }

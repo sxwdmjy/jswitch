@@ -1,26 +1,12 @@
 package com.jswitch.server.process.requset;
 
-import cn.hutool.core.util.IdUtil;
-import com.jswitch.server.cache.SipChannelCache;
-import com.jswitch.server.channel.SipCallChannel;
-import com.jswitch.server.channel.SipCallDetailChannel;
 import com.jswitch.server.msg.SipMessageEvent;
 import com.jswitch.server.process.AbstractSipMessageProcess;
-import com.jswitch.server.utils.SessionChannelManager;
-import com.jswitch.service.domain.Location;
 import com.jswitch.service.service.ILocationService;
 import com.jswitch.sip.SipRequest;
-import com.jswitch.sip.SipResponse;
-import com.jswitch.sip.SipResponseStatus;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.Objects;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 @Component("INVITE")
 public class InviteSipMessageProcess extends AbstractSipMessageProcess {
@@ -28,14 +14,12 @@ public class InviteSipMessageProcess extends AbstractSipMessageProcess {
     @Resource
     private ILocationService locationService;
 
-    private Lock lock = new ReentrantLock();
-    private Condition condition = lock.newCondition();
 
     @Override
     public void handle(SipMessageEvent event) throws InterruptedException {
         SipRequest sipRequest = (SipRequest) event.getMessage();
 
-        long currented = System.currentTimeMillis();
+        /*long currented = System.currentTimeMillis();
         SipCallDetailChannel fromChannel = new SipCallDetailChannel();
         fromChannel.setUniqueId(IdUtil.fastSimpleUUID());
         fromChannel.setCallId(sipRequest.getCallId());
@@ -76,13 +60,8 @@ public class InviteSipMessageProcess extends AbstractSipMessageProcess {
         }
         SipChannelCache.saveSipCallChannel(sipCallChannel);
 
-
+*/
 
     }
 
-
-    private void sendInviteRequest(SipRequest message, Location loaction) {
-        SipRequest inviteRequest = createInviteRequest(message);
-        sendResponse(SessionChannelManager.get(loaction.getUsername()),inviteRequest.toString());
-    }
 }

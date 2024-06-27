@@ -13,6 +13,6 @@ public class NoStrategySipMessageProcess extends AbstractSipMessageProcess {
 
     @Override
     public void handle(SipMessageEvent event) {
-        event.getCtx().writeAndFlush(createResponse(500, (SipRequest) event.getMessage(), "No Strategy"));
+
     }
 }

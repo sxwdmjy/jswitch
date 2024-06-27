@@ -9,4 +9,4 @@ spring:
 
 netty:
   sip:
-    port: 5060
+    port: 5010

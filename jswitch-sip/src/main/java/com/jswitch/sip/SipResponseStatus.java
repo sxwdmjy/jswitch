@@ -59,8 +59,8 @@ public enum SipResponseStatus {
     DOES_NOT_EXIST_ANYWHERE(604,"Does not exist anywhere"),
     SESSION_NOT_ACCEPTABLE(606,"Session Not acceptable"),
     ;
-    private int statusCode;
-    private String reasonPhrase;
+    private final int statusCode;
+    private final String reasonPhrase;
 
     SipResponseStatus(int statusCode,String reasonPhrase) {
         this.statusCode = statusCode;

@@ -22,9 +22,9 @@ public class SipTcpRequestHandler extends SimpleChannelInboundHandler<SipMessage
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, SipMessage message) throws Exception {
         String remoteAddress = ctx.channel().remoteAddress().toString();
-        message.setChannelId(ctx.channel().id().asLongText());
-        message.setRemoteIp(remoteAddress.substring(1, remoteAddress.lastIndexOf(':')));
-        message.setRemotePort(remoteAddress.substring(remoteAddress.lastIndexOf(':') + 1));
+       // message.setChannelId(ctx.channel().id().asLongText());
+       // message.setRemoteIp(remoteAddress.substring(1, remoteAddress.lastIndexOf(':')));
+      //  message.setRemotePort(remoteAddress.substring(remoteAddress.lastIndexOf(':') + 1));
         SipMessageEvent event = new SipMessageEvent(message, ctx);
         if (message instanceof SipRequest) {
             SipMessageListener sipMessageListener = listenerList.stream().filter(listener -> listener instanceof AsyncSipRequestListener).findFirst().orElse(null);
