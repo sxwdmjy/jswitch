@@ -30,6 +30,7 @@
         <sqlparser4.7.version>6.1.0</sqlparser4.7.version>
         <jsqlparser.version>4.9</jsqlparser.version>
         <liteflow.version>2.12.0</liteflow.version>
+        <spring-statemachine.version>4.0.0</spring-statemachine.version>
     </properties>
     <packaging>pom</packaging>
     <modules>
@@ -145,7 +146,13 @@
                 <artifactId>liteflow-spring-boot-starter</artifactId>
                 <version>${liteflow.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>org.springframework.statemachine</groupId>
+                <artifactId>spring-statemachine-bom</artifactId>
+                <version>${spring-statemachine.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

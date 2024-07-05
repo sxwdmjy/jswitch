@@ -2,7 +2,7 @@ package com.jswitch.server.process.requset;
 
 import com.jswitch.server.msg.SipMessageEvent;
 import com.jswitch.server.process.AbstractSipMessageProcess;
-import com.jswitch.sip.SipRequest;
+import com.jswitch.sip.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -12,7 +12,12 @@ public class NoStrategySipMessageProcess extends AbstractSipMessageProcess {
 
 
     @Override
-    public void handle(SipMessageEvent event) {
+    public void handler(SipMessageEvent event) {
 
+    }
+
+    @Override
+    public Response handleRequest(SipMessageEvent event) {
+        return null;
     }
 }

@@ -29,11 +29,11 @@ public class AsyncSipResponseListener implements SipMessageListener, Initializin
         try {
             SipMessageStrategy strategy = strategyFactory.getSipResponseStrategy(response.getStatusCode());
             if (strategy != null) {
-                strategy.handle(event);
+                strategy.handler(event);
             } else {
                 log.info("No strategy found for statusCode type: " + response.getStatusCode());
                 SipMessageStrategy nostrategy = strategyFactory.getSipResponseStrategy(500);
-                nostrategy.handle(event);
+                nostrategy.handler(event);
             }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);

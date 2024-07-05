@@ -31,11 +31,11 @@ public class AsyncSipRequestListener implements SipMessageListener, Initializing
         try {
             SipMessageStrategy strategy = strategyFactory.getSipRequestStrategy(message.getMethod());
             if (strategy != null) {
-                strategy.handle(event);
+                strategy.handler(event);
             } else {
                 log.info("No strategy found for message type: " + message.getMethod());
                 SipMessageStrategy nostrategy = strategyFactory.getSipRequestStrategy("NOSTRATEGY");
-                nostrategy.handle(event);
+                nostrategy.handler(event);
             }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);

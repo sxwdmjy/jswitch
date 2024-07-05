@@ -1,4 +1,4 @@
-package com.jswitch.sip;
+package com.jswitch.common.enums;
 
 import lombok.Getter;
 
@@ -10,8 +10,9 @@ import java.io.Serializable;
  * @date 2024-06-13 17:08
  **/
 @Getter
-public enum TransactionState implements Serializable {
+public enum TransactionStateEnum implements Serializable {
 
+    INITIAL(-1, "Initial"),
     CALLING(0, "Calling"),
     TRYING(1, "Trying"),
     PROCEEDING(2, "Proceeding"),
@@ -19,7 +20,7 @@ public enum TransactionState implements Serializable {
     CONFIRMED(4, "Confirmed"),
     TERMINATED(5, "Terminated");
 
-    TransactionState(int state, String description) {
+    TransactionStateEnum(int state, String description) {
         this.state = state;
         this.description = description;
     }
@@ -27,8 +28,8 @@ public enum TransactionState implements Serializable {
     private final int state;
     private final String description;
 
-    public static TransactionState getState(int state) {
-        for (TransactionState transactionState : TransactionState.values()) {
+    public static TransactionStateEnum getState(int state) {
+        for (TransactionStateEnum transactionState : TransactionStateEnum.values()) {
             if (transactionState.state == state) {
                 return transactionState;
             }

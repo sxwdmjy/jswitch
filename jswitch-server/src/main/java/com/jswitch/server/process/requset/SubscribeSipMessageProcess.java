@@ -16,7 +16,7 @@ public class SubscribeSipMessageProcess extends AbstractSipMessageProcess {
     private ILocationService locationService;
 
     @Override
-    public void handle(SipMessageEvent event) {
+    public void handler(SipMessageEvent event) {
         SipRequest sipRequest = (SipRequest) event.getMessage();
         // 解析请求头和其他必要信息
         ToHeader messageTo = sipRequest.getTo();
@@ -45,6 +45,11 @@ public class SubscribeSipMessageProcess extends AbstractSipMessageProcess {
         // 如果所有检查通过，生成并发送200 OK响应
         SipResponse response = sipRequest.createResponse(SipResponseStatus.OK.getStatusCode(), "Subscription accepted");
         event.getCtx().writeAndFlush(response);
+    }
+
+    @Override
+    public Response handleRequest(SipMessageEvent event) {
+        return null;
     }
 
     private boolean isAuthenticated(FromHeader messageFrom) {

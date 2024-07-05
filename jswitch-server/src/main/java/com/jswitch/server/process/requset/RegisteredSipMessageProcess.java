@@ -22,7 +22,7 @@ public class RegisteredSipMessageProcess extends AbstractSipMessageProcess {
 
 
     @Override
-    public void handle(SipMessageEvent event) {
+    public void handler(SipMessageEvent event) {
         SipRequest sipRequest = (SipRequest)event.getMessage();
 
         //判断是否为
@@ -77,10 +77,10 @@ public class RegisteredSipMessageProcess extends AbstractSipMessageProcess {
         }
     }
 
-
-
-
-
+    @Override
+    public Response handleRequest(SipMessageEvent event) {
+        return null;
+    }
 
 
 }
