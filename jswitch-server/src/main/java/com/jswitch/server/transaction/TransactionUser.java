@@ -1,23 +1,53 @@
 package com.jswitch.server.transaction;
 
 import com.jswitch.server.msg.SipMessageEvent;
+import com.jswitch.sip.SipRequest;
+import com.jswitch.sip.SipResponse;
+import io.netty.channel.ChannelHandlerContext;
 
 /**
  * 事务用户TU (Transaction User)
- * 每个SIP实体，除无状态代理外，都是事务用户。
- * 当事务用户想发送请求时，它就创建一个客户端事务实例，并将请求与目的IP 地址、端口一起发送。创建客户端事务的TU 也可以取消事务。
- * 客户端取消事务的时候，就要求服务器停止进一步处理，并恢复到初始化事务前的状态，然后返回该事务的一个错误响应。
- * 可通过CANCEL请求完成取消事务，CANCEL请求包含自己的事务，同时也提及需要取消的事务
  */
 public interface TransactionUser {
 
-    public void handleRequest(SipMessageEvent event);
 
-    void sendRequest(SipMessageEvent event);
+    /**
+     * 接收并处理请求。
+     *
+     * @param request     收到的SIP请求
+     * @param transaction 服务器事务实例
+     */
+    void onRequest(SipRequest request, ServerSipTransaction transaction);
 
-    void cancelTransaction(SipMessageEvent event);
+    /**
+     * 接收并处理响应。
+     *
+     * @param response    收到的SIP响应
+     * @param transaction 客户端事务实例
+     */
+    void onResponse(SipResponse response, ClientSipTransaction transaction);
 
-    void sendResponse(SipMessageEvent event);
+    /**
+     * 当事务超时时调用该方法。
+     *
+     * @param transaction 超时的事务
+     */
+    void onTimeout(Transaction transaction);
+
+    /**
+     * 取消事务。
+     *
+     * @param transaction 要取消的客户端事务
+     */
+    void onCancel(Transaction transaction);
+
+    /**
+     * 发送请求。
+     *
+     * @param request 要发送的SIP请求
+     * @param ctx     通道上下文
+     */
+    void sendRequest(SipRequest request, ChannelHandlerContext ctx);
 
     void sendResponseError(SipMessageEvent event);
 }

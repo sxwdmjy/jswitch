@@ -592,8 +592,7 @@ public abstract class SipMessage extends MessageObject implements Message {
 
         if (topVia != null
                 && topVia.getBranch() != null
-                && topVia.getBranch().toUpperCase().startsWith(
-                SIPConstants.BRANCH_MAGIC_COOKIE_UPPER_CASE)) {
+                && topVia.getBranch().toUpperCase().startsWith(SIPConstants.BRANCH_MAGIC_COOKIE_UPPER_CASE)) {
             if (this.getCSeq().getMethod().equals(Request.CANCEL))
                 return (topVia.getBranch() + ":" + this.getCSeq().getMethod()).toLowerCase();
             else

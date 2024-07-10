@@ -1,11 +1,10 @@
 package com.jswitch.server.process.requset;
 
-import com.jswitch.server.cache.SipDialogManageCache;
 import com.jswitch.server.cache.TransactionManageCache;
 import com.jswitch.server.msg.SipMessageEvent;
 import com.jswitch.server.process.AbstractSipMessageProcess;
 import com.jswitch.server.transaction.ServerSipTransaction;
-import com.jswitch.server.transaction.ServerTransactionUser;
+import com.jswitch.server.transaction.SipTransactionUser;
 import com.jswitch.service.service.ILocationService;
 import com.jswitch.sip.*;
 import com.jswitch.sip.adress.AddressImpl;
@@ -23,22 +22,20 @@ public class InviteSipMessageProcess extends AbstractSipMessageProcess {
     @Resource
     private ILocationService locationService;
 
-
     @Override
     public void handler(SipMessageEvent event) throws InterruptedException {
+        SipTransactionUser sipTransactionUser = new SipTransactionUser(this);
         SipRequest sipRequest = (SipRequest) event.getMessage();
-        ServerTransactionUser serverTransactionUser = new ServerTransactionUser(new ServerSipTransaction());
-        serverTransactionUser.setSipMessageStrategy(this);
-        serverTransactionUser.getServerTransaction().processRequest(event);
-        TransactionManageCache.addServerTransaction(sipRequest.getTransactionId(), serverTransactionUser.getServerTransaction());
+        ServerSipTransaction serverSipTransaction = new ServerSipTransaction(event, sipTransactionUser);
+        serverSipTransaction.processRequest();
+        TransactionManageCache.addServerTransaction(serverSipTransaction.getTransactionId(), serverSipTransaction);
     }
-
     @Override
-    public Response handleRequest(SipMessageEvent event) {
+    public void handleRequest(SipMessageEvent event) {
         SipRequest sipRequest = (SipRequest) event.getMessage();
 
         if (checkAuthorization(sipRequest)) {
-            SipResponse response = sipRequest.createResponse(SipResponseStatus.TRYING.getStatusCode());
+            SipResponse response = sipRequest.createResponse(SipResponseStatus.RINGING.getStatusCode());
             RecordRouteList recordRouteHeaders = sipRequest.getRecordRouteHeaders();
             response.addHeader(recordRouteHeaders);
             Contact contact = new Contact();
@@ -47,25 +44,10 @@ public class InviteSipMessageProcess extends AbstractSipMessageProcess {
             address.setAddess(uri);
             contact.setAddress(address);
             response.addHeader(contact);
-
-            //sendResponse(event.getCtx(), response);
-
-            if (!SipDialogManageCache.isExist(sipRequest.getDialogId(true))) {
-                SipDialog sipDialog = new SipDialog();
-                sipDialog.setDialogId(sipRequest.getDialogId(true));
-                sipDialog.setState(DialogState.EARLY);
-                sipDialog.setCallId(sipRequest.getCallId());
-                sipDialog.setRouteList(sipRequest.getRouteHeaders());
-                sipDialog.setRemoteTarget(address);
-                sipDialog.setRemoteCSeq(sipRequest.getCSeq());
-                sipDialog.setLocalCSeq(null);
-                sipDialog.setLocalTag(sipRequest.getToTag());
-                sipDialog.setRemoteTag(sipRequest.getFrom().getTag());
-                SipDialogManageCache.saveSipDialog(sipDialog);
-            }
-            return response;
+            sendResponse(event.getCtx(), response);
+            //return response;
         } else {
-            return sendUnauthorizedResponse(sipRequest);
+            sendResponse(event.getCtx(), sendUnauthorizedResponse(sipRequest));
         }
     }
 

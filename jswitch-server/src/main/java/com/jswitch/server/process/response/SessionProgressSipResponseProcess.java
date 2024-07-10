@@ -3,7 +3,6 @@ package com.jswitch.server.process.response;
 import com.jswitch.common.annotation.EventName;
 import com.jswitch.server.msg.SipMessageEvent;
 import com.jswitch.server.process.AbstractSipMessageProcess;
-import com.jswitch.sip.Response;
 import org.springframework.stereotype.Component;
 
 /**
@@ -18,7 +17,7 @@ public class SessionProgressSipResponseProcess extends AbstractSipMessageProcess
     }
 
     @Override
-    public Response handleRequest(SipMessageEvent event) {
+    public void handleRequest(SipMessageEvent event) {
         return null;
     }
 }

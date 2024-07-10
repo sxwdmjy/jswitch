@@ -2,6 +2,7 @@ package com.jswitch.server.transaction;
 
 import com.jswitch.common.enums.TransactionStateEnum;
 import com.jswitch.server.msg.SipMessageEvent;
+import com.jswitch.sip.Response;
 
 /**
  * @author danmo
@@ -16,7 +17,7 @@ public class ClientSipTransaction implements SipTransaction {
     }
 
     @Override
-    public void sendResponse(SipMessageEvent event) {
+    public void sendResponse(SipMessageEvent event, Response response) {
 
     }
 }

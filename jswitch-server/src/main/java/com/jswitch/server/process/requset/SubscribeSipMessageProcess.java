@@ -48,7 +48,7 @@ public class SubscribeSipMessageProcess extends AbstractSipMessageProcess {
     }
 
     @Override
-    public Response handleRequest(SipMessageEvent event) {
+    public void handleRequest(SipMessageEvent event) {
         return null;
     }
 

@@ -1,11 +1,11 @@
 package com.jswitch.server.transaction;
 
-import com.jswitch.server.msg.SipMessageEvent;
+import com.jswitch.sip.Response;
 
 public interface SipTransaction extends Transaction {
 
-    void processRequest(SipMessageEvent event);
+    void processRequest();
 
-    void sendResponse(SipMessageEvent event);
+    void sendResponse(Response response);
 
 }

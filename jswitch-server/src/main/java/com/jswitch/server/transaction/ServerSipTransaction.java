@@ -1,6 +1,7 @@
 package com.jswitch.server.transaction;
 
 import com.jswitch.common.enums.TransactionStateEnum;
+import com.jswitch.server.cache.SipDialogManageCache;
 import com.jswitch.server.cache.TransactionManageCache;
 import com.jswitch.server.msg.SipMessageEvent;
 import com.jswitch.sip.*;
@@ -39,9 +40,20 @@ public class ServerSipTransaction implements SipTransaction {
      * 最后一个临时响应
      */
     private Response lastProvisionalResponse;
-
+    /**
+     * 最后一次响应
+     */
     private Response lastFinalResponse;
 
+
+    private String transactionId;
+
+    /**
+     * 事件消息
+     */
+    private SipMessageEvent eventMsg;
+
+    private SipDialog sipDialog;
 
     private final long T1 = 500;  // T1 默认值为500ms
     private final long T2 = 4000; // T2 默认值为4s
@@ -52,14 +64,17 @@ public class ServerSipTransaction implements SipTransaction {
     private ScheduledThreadPoolExecutor timerH;
     private ScheduledThreadPoolExecutor timerI;
 
-    public ServerSipTransaction() {
+    public ServerSipTransaction(SipMessageEvent event, TransactionUser transactionUser) {
         this.state = TransactionStateEnum.INITIAL;
+        this.eventMsg = event;
+        this.transactionUser = transactionUser;
+        this.transactionId = event.getMessage().getTransactionId();
     }
 
 
     @Override
-    public void processRequest(SipMessageEvent event) {
-        SipRequest sipRequest = (SipRequest) event.getMessage();
+    public void processRequest() {
+        SipRequest sipRequest = (SipRequest) eventMsg.getMessage();
         if (Objects.equals(sipRequest.getMethod(), Request.INVITE)) {
             if (state == TransactionStateEnum.INITIAL) {
                 state = TransactionStateEnum.PROCEEDING;
@@ -70,7 +85,7 @@ public class ServerSipTransaction implements SipTransaction {
                     if (state == TransactionStateEnum.PROCEEDING) {
                         // 生成100 (Trying)响应
                         SipResponse response = sipRequest.createResponse(100);
-                        sendResponse(new SipMessageEvent(response, event.getCtx()));
+                        sendResponse(response);
                     }
                 }, 200, TimeUnit.MILLISECONDS);
 
@@ -78,12 +93,12 @@ public class ServerSipTransaction implements SipTransaction {
                     // 如果接收的请求头中的To头域没有tag标志，那么原来描述的 可以增加tag标记，更改成为 不应该增加tag标志
                 }
                 //将请求交给TU处理
-                transactionUser.handleRequest(event);
-            } else if (state == TransactionStateEnum.PROCEEDING && isRetransmission(event)) {
+                transactionUser.sendRequest(sipRequest, eventMsg.getCtx());
+            } else if (state == TransactionStateEnum.PROCEEDING && isRetransmission(eventMsg)) {
                 // 如果是重发请求，重新发送最后一个临时响应
                 if (lastProvisionalResponse != null) {
                     System.out.println("Retransmission detected. Resending last provisional response: " + lastProvisionalResponse);
-                    sendToTransportLayer(event.getCtx(), lastProvisionalResponse);
+                    sendToTransportLayer(eventMsg.getCtx(), lastProvisionalResponse);
                 }
             }
         } else if (Objects.equals(sipRequest.getMethod(), Request.ACK)) {
@@ -98,7 +113,7 @@ public class ServerSipTransaction implements SipTransaction {
                 }
                 timerI.schedule(() -> {
                     state = TransactionStateEnum.TERMINATED;
-                    close(event);
+                    close(sipRequest.getTransactionId());
                 }, timeIDelay, TimeUnit.MILLISECONDS);
             }
         }
@@ -107,31 +122,45 @@ public class ServerSipTransaction implements SipTransaction {
 
 
     @Override
-    public void sendResponse(SipMessageEvent event) {
-        if (event.getMessage() instanceof SipResponse sipResponse) {
+    public void sendResponse(Response response) {
+        SipRequest sipRequest = (SipRequest) eventMsg.getMessage();
+        if (response instanceof SipResponse sipResponse) {
             if (sipResponse.getStatusCode() >= 200 && sipResponse.getStatusCode() < 300) {
                 state = TransactionStateEnum.TERMINATED;
                 // 停止定时任务
                 timerTemporary.shutdownNow();
-                sendToTransportLayer(event.getCtx(), sipResponse);
-                close(event);
+                sendToTransportLayer(eventMsg.getCtx(), sipResponse);
+                close(sipRequest.getTransactionId());
+
+                if (Objects.isNull(sipDialog) && sipResponse.getStatusCode() == 200) {
+                    if (!SipDialogManageCache.isExist(sipRequest.getDialogId(true))) {
+                        SipDialog dialog = SipDialog.createDialogFromResponse((SipResponse) response, sipRequest);
+                        SipDialogManageCache.saveSipDialog(dialog);
+                    } else {
+                        SipDialog sipDialog = SipDialogManageCache.getSipDialog(sipRequest.getDialogId(true));
+                        sipDialog.setState(DialogState.COMPLETED);
+                    }
+                }
             } else if (sipResponse.getStatusCode() >= 300 && sipResponse.getStatusCode() < 700) {
                 if (state == TransactionStateEnum.PROCEEDING) {
                     this.lastFinalResponse = sipResponse;
-                    sendToTransportLayer(event.getCtx(), sipResponse);
+                    sendToTransportLayer(eventMsg.getCtx(), sipResponse);
                     state = TransactionStateEnum.COMPLETED;
                     if (!isReliableTransport(sipResponse)) {
                         timerG = new ScheduledThreadPoolExecutor(1, new DefaultThreadFactory("serverTransaction timerG"));
                         timerG.schedule(new Runnable() {
                             @Override
                             public void run() {
-                                sendToTransportLayer(event.getCtx(), lastFinalResponse);
+                                sendToTransportLayer(eventMsg.getCtx(), lastFinalResponse);
                                 long nextG = Math.min(2 * T1, T2);
                                 timerG.schedule(this, nextG, TimeUnit.MILLISECONDS);
                             }
                         }, T1, TimeUnit.MILLISECONDS);
                     }
 
+                    if (!SipDialogManageCache.isExist(sipRequest.getDialogId(true))) {
+                        SipDialogManageCache.removeSipDialog(sipRequest.getDialogId(true));
+                    }
 
                     timerH = new ScheduledThreadPoolExecutor(1, new DefaultThreadFactory("serverTransaction TimeH"));
                     timerH.schedule(new Runnable() {
@@ -139,11 +168,11 @@ public class ServerSipTransaction implements SipTransaction {
                         public void run() {
                             if (state == TransactionStateEnum.COMPLETED) {
                                 state = TransactionStateEnum.TERMINATED;
-                                transactionUser.sendResponseError(event);
-                                close(event);
+                                transactionUser.sendResponseError(new SipMessageEvent(sipResponse, eventMsg.getCtx()));
+                                close(sipRequest.getTransactionId());
                             } else if (state == TransactionStateEnum.TERMINATED) {
                                 timerH.shutdownNow();
-                                close(event);
+                                close(sipRequest.getTransactionId());
                             }
                         }
                     }, 64 * T1, TimeUnit.MILLISECONDS);
@@ -151,7 +180,12 @@ public class ServerSipTransaction implements SipTransaction {
             } else {
                 if (state == TransactionStateEnum.PROCEEDING) {
                     lastProvisionalResponse = sipResponse;
-                    sendToTransportLayer(event.getCtx(), sipResponse);
+                    sendToTransportLayer(eventMsg.getCtx(), sipResponse);
+                }
+
+                if (!SipDialogManageCache.isExist(sipRequest.getDialogId(true))) {
+                    SipDialog dialog = SipDialog.createDialogFromResponse(sipResponse, sipRequest);
+                    SipDialogManageCache.saveSipDialog(dialog);
                 }
             }
         }
@@ -176,7 +210,7 @@ public class ServerSipTransaction implements SipTransaction {
         ctx.writeAndFlush(response);
     }
 
-    private void close(SipMessageEvent event) {
+    private void close(String transactionId) {
         if (timerTemporary != null) {
             timerTemporary.shutdown();
         }
@@ -189,6 +223,6 @@ public class ServerSipTransaction implements SipTransaction {
         if (timerI != null) {
             timerI.shutdown();
         }
-        TransactionManageCache.removeServerTransaction(event.getMessage().getTransactionId());
+        TransactionManageCache.removeServerTransaction(transactionId);
     }
 }

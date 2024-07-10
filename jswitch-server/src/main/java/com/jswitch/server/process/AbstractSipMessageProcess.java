@@ -1,10 +1,15 @@
 package com.jswitch.server.process;
 
 import cn.hutool.core.util.IdUtil;
+import com.jswitch.common.enums.TransactionStateEnum;
 import com.jswitch.common.utils.AESUtils;
 import com.jswitch.common.utils.DigestAuthUtils;
+import com.jswitch.server.cache.TransactionManageCache;
 import com.jswitch.server.factory.SipMessageStrategy;
 import com.jswitch.server.msg.SipMessageEvent;
+import com.jswitch.server.transaction.ServerSipTransaction;
+import com.jswitch.server.transaction.SipTransactionUser;
+import com.jswitch.server.transaction.Transaction;
 import com.jswitch.service.domain.Subscriber;
 import com.jswitch.service.service.ILocationService;
 import com.jswitch.service.service.ISubscriberService;
@@ -16,13 +21,10 @@ import com.jswitch.sip.header.WWWAuthenticateHeader;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.text.ParseException;
-import java.util.Map;
 import java.util.Objects;
 
 @Slf4j
@@ -69,7 +71,7 @@ public abstract class AbstractSipMessageProcess implements SipMessageStrategy {
         }
     }
 
-    public Response sendUnauthorizedResponse(SipRequest request) {
+    public SipResponse sendUnauthorizedResponse(SipRequest request) {
         SipResponse response = request.createResponse(SipResponseStatus.UNAUTHORIZED.getStatusCode());
         try {
             String realm = ((AddressImpl) request.getFrom().getAddress()).getHost();
@@ -87,7 +89,14 @@ public abstract class AbstractSipMessageProcess implements SipMessageStrategy {
         if(channelFuture.isDone()){
             log.info("发送响应消息失败");
         }
+        if (response.getStatusCode() == SipResponseStatus.OK.getStatusCode()){
+            ServerSipTransaction serverSipTransaction = TransactionManageCache.getServerTransaction(response.getTransactionId());
+            if(Objects.nonNull(serverSipTransaction)){
+                serverSipTransaction.sendResponse(response);
+            }
+        }
         return channelFuture;
     }
+
 
 }
